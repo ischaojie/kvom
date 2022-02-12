@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "kvom"
+version = "0.1.0"
+description = "key-value store object mapping"
+authors = ["ischaojie <zhuzhezhe95@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+pydantic = "^1.9.0"
+python-ulid = "^1.0.3"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
