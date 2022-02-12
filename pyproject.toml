@@ -8,6 +8,8 @@ authors = ["ischaojie <zhuzhezhe95@gmail.com>"]
 python = "^3.7"
 pydantic = "^1.9.0"
 python-ulid = "^1.0.3"
+aioredis = "^2.0.1"
+asyncio = "^3.4.3"
 
 [tool.poetry.dev-dependencies]
 
