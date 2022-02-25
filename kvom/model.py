@@ -1,138 +1,134 @@
 # -*- coding: utf-8 -*-
-from dataclasses import dataclass
-from typing import Any, Optional
+import uuid
+from typing import Any, ClassVar, Optional, TypeVar
 
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic.class_validators import validator
-from pydantic.fields import ModelField
 from pydantic.main import ModelMetaclass
-from ulid import ULID
-from kvom.database import Database
-from kvom.exceptions import PrimaryKeyDuplicateError, PrimaryKeyNotFoundError
-from kvom.field import Field, FieldInfo
 
+from kvom.exceptions import NoSourceError
+from kvom.source import Source
 
-@dataclass
-class PrimaryKey:
-    name: str
-    field: ModelField
+T = TypeVar("T", bound="BaseModel")
 
 
 class BaseMeta:
-    global_key_prefix: str
-    model_key_prefix: str
-    database: Database
-    primary_key: PrimaryKey
-    encoding: str
+    # data source
+    source: Source = None
 
+    # the model encoding format when saving to the store
+    encoding: str = "utf-8"
 
-@dataclass
-class DefaultMeta:
+    # Model prefix for get or save in the store
+    # Default value will be the module name concat model name
     global_key_prefix: Optional[str] = None
     model_key_prefix: Optional[str] = None
-    database: Optional[Database] = None
-    primary_key: Optional[PrimaryKey] = None
-    encoding: Optional[str] = "utf-8"
+
+    # the primary key of the model
+    db_key: Optional[str] = None
+
+    # is support embedded model
+    embedded: bool = False
+
+
+def _set_meta_default(cls, meta, base_meta):
+    if not getattr(meta, "encoding", None):
+        meta.encoding = getattr(base_meta, "encoding", "utf-8")
+
+    if not getattr(meta, "global_key_prefix", None):
+        meta.global_key_prefix = getattr(base_meta, "global_key_prefix", "")
+
+    if not getattr(meta, "model_key_prefix", None):
+        meta.model_key_prefix = f"{cls.__module__}:{cls.__name__}".lower()
+
+    if not getattr(meta, "db_key", None):
+        meta.db_key = getattr(base_meta, "db_key", uuid.uuid4().hex)
+
+    if not getattr(meta, "embedded", None):
+        meta.embedded = getattr(base_meta, "embedded", False)
+
+    if not getattr(meta, "source", None):
+        meta.source = getattr(base_meta, "source", None)
 
 
 class BaseModelMeta(ModelMetaclass):
-    _meta = BaseMeta
+    _meta: BaseMeta
 
     def __new__(mcs, name, bases, attrs, **kwargs):
         cls = super().__new__(mcs, name, bases, attrs, **kwargs)
-        meta = attrs.pop("Meta", None)
+        meta = attrs.get("Meta", None)
 
-        base_meta = meta or getattr(cls, "_meta", None)
+        # if cls not defined Meta, get from parent
         meta = meta or getattr(cls, "Meta", None)
-
-        # inherit meta from father class
-        if meta and meta != DefaultMeta and meta != base_meta:
-            cls._meta = meta
+        base_meta = getattr(cls, "_meta", None)
+        # no inherited, defined Meta
+        if meta and meta != BaseMeta and meta != base_meta:
             cls.Meta = meta
+            cls._meta = meta
+        # inherited Meta
         elif base_meta:
             cls._meta = type(
                 f"{cls.__name__}Meta", (base_meta,), dict(base_meta.__dict__)
             )
             cls.Meta = cls._meta
-            # unset inherited values
+            # remove inherited meta attr
             cls._meta.model_key_prefix = None
+        # no defined Meta, no inherited, use default
         else:
             cls._meta = type(
-                f"{cls.__name__}Meta",
-                (DefaultMeta,),
-                dict(DefaultMeta.__dict__),
+                f"{cls.__name__}Meta", (BaseMeta,), dict(BaseMeta.__dict__)
             )
             cls.Meta = cls._meta
 
-        for field_name, field in cls.__fields__.items():
-            if isinstance(field.field_info, FieldInfo):
-                # set primary key
-                if field.field_info.primary_key:
-                    cls._meta.primary_key = PrimaryKey(name=field_name, field=field)
-
-        # get meta attr values from base model if there not set
-        if not getattr(cls._meta, "database", None):
-            # TODO: get default database connection
-            cls._meta.database = getattr(base_meta, "database", None)
-
-        if not getattr(cls._meta, "global_key_prefix", None):
-            cls._meta.global_key_prefix = getattr(base_meta, "global_key_prefix", "")
-
-        if not getattr(cls._meta, "model_key_prefix", None):
-            cls._meta.model_key_prefix = f"{cls.__module__}.{cls.__name__}"
-
-        if not getattr(cls._meta, "encoding", None):
-            cls._meta.encoding = getattr(base_meta, "encoding")
+        # set Meta default value if there is no defined
+        _set_meta_default(cls, cls._meta, base_meta)
 
         return cls
 
 
 class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
-    pk: Optional[str] = Field(None, primary_key=True)
-    Meta = DefaultMeta
+    """
+    Example:
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
-        extra = "allow"
+    class UserModel(BaseModel):
+        class Meta:
+            can_edit = False
 
-    def __init__(self, **data: Any) -> None:
+        name: str
+        age: int
+
+    user = UserModel(name="John", age=18)
+    user.save()
+
+    """
+
+    Meta = BaseMeta
+    identity: ClassVar[str]
+
+    def __init__(__pydantic_self__, **data: Any) -> None:
         super().__init__(**data)
-        self.validate_primary_key()
+        __pydantic_self__.validate_source()
 
-    @validator("pk", always=True, allow_reuse=True)
-    def validate_pk(cls, v):
-        return str(ULID) if not v else v
-
-    @classmethod
-    def validate_primary_key(cls):
-        """Check for a primary key. We need one (and only one)."""
-        primary_keys = 0
-        for name, field in cls.__fields__.items():
-            if getattr(field.field_info, "primary_key", None):
-                primary_keys += 1
-        if primary_keys == 0:
-            raise PrimaryKeyNotFoundError("You must define a primary key for the model")
-        elif primary_keys > 1:
-            raise PrimaryKeyDuplicateError(
-                "You must define only one primary key for a model"
-            )
-
+    @property
     def key(self):
-        """the key for database crud operation"""
-        cls = self.__class__
-        pk = getattr(cls, cls._meta.primary_key.field.name)
-        global_prefix = getattr(cls._meta, "global_key_prefix", "").strip(":")
-        model_prefix = getattr(cls._meta, "model_key_prefix", "").strip(":")
-        prefix = f"{global_prefix}:{model_prefix}:{pk}"
-        return prefix
+        db_key = getattr(self._meta, "db_key")
+        global_prefix = getattr(self._meta, "global_key_prefix", "")
+        model_prefix = getattr(self._meta, "model_key_prefix", "")
+        return f"{global_prefix}:{model_prefix}:{db_key}".strip(":")
 
     @classmethod
-    async def get(cls, pk: Any) -> "BaseModel":
-        return await cls._meta.database.get(cls, pk)
+    def validate_source(cls):
+        if cls._meta.source is None or not isinstance(cls._meta.source, Source):
+            raise NoSourceError("Model must have a Source client")
 
-    async def save(self) -> "BaseModel":
-        return await self.__class__._meta.database.save(self)
+    @classmethod
+    def get(cls, key: str) -> Optional["BaseModel"]:
+        data = cls._meta.source.get(key)
+        if not data:
+            return None
+        return cls.parse_raw(data, encoding=cls._meta.encoding)
 
-    async def delete(self):
-        return await self.__class__._meta.database.delete(self.key())
+    def save(self) -> bool:
+        return self._meta.source.set(self.key, self.json())
+
+    def delete(self) -> bool:
+        return self._meta.source.delete(self.key)

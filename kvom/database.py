@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import threading
+
 import asyncio
 from contextvars import ContextVar
 from typing import Union, Any, Dict
@@ -27,81 +29,80 @@ class Database:
 
         self._connection_context = ContextVar("connection_context")  # type: ContextVar
 
-    async def connect(self) -> None:
+    def connect(self) -> None:
         if self.is_connected:
-            return None
-
-        await self._backend.connect()
-
+            return
+        self._backend.connect()
+        print("连上了")
         self.is_connected = True
 
-    async def disconnect(self) -> None:
+    def disconnect(self) -> None:
         if not self.is_connected:
             return
-        await self._backend.disconnect()
+        self._backend.disconnect()
         self.is_connected = False
 
     def connection(self) -> "Conn":
         try:
             return self._connection_context.get()
         except LookupError:
-            _conn = Conn(self._backend)
-            self._connection_context.set(_conn)
-            return _conn
+            conn = Conn(self._backend)
+            self._connection_context.set(conn)
+            return conn
 
-    async def __aenter__(self) -> "Database":
-        await self.connect()
+    def __enter__(self) -> "Database":
+        self.connect()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        await self.disconnect()
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.disconnect()
 
-    async def get(self, key: str) -> Any:
-        async with self.connection() as conn:
-            return await conn.get(key)
+    def get(self, key: str) -> Any:
+        with self.connection() as conn:
+            return conn.get(key)
 
-    async def set(self, key: str, mapping: Dict) -> bool:
-        async with self.connection() as conn:
-            return await conn.set(key, mapping)
+    def set(self, key: str, mapping: Dict) -> bool:
+        with self.connection() as conn:
+            return conn.set(key, mapping)
 
-    async def delete(self, key: str) -> bool:
-        async with self.connection() as conn:
-            return await conn.delete(key)
+    def delete(self, key: str) -> bool:
+        with self.connection() as conn:
+            return conn.delete(key)
 
 
 class Conn:
     def __init__(self, backend: DatabaseBackend) -> None:
         self._backend = backend
         self._conn = self._backend.connection()
-        self._conn_lock = asyncio.Lock()
+        self._conn_lock = threading.Lock()
         self._conn_counter = 0
 
-    async def __aenter__(self):
-        async with self._conn_lock:
+    def __enter__(self):
+        with self._conn_lock:
             self._conn_counter += 1
             try:
                 if self._conn_counter == 1:
-                    await self._conn.acquire()
+                    self._conn.acquire()
             except BaseException as e:
                 self._conn_counter -= 1
                 raise e
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        async with self._conn_lock:
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        with self._conn_lock:
             assert self._conn is not None
             self._conn_counter -= 1
             if self._conn_counter == 0:
-                await self._conn.release()
+                self._conn.release()
 
-    async def get(self, key: str) -> Any:
-        async with self._conn_lock:
-            return await self._conn.get(key)
+    def get(self, key: str) -> Any:
+        with self._conn_lock:
+            return self._conn.get(key)
 
-    async def set(self, key: str, mapping: Dict) -> bool:
-        async with self._conn_lock:
-            return await self._conn.set(key, mapping)
+    def set(self, key: str, mapping: Dict) -> bool:
+        with self._conn_lock:
+            return self._conn.set(key, mapping)
 
-    async def delete(self, key: str) -> bool:
-        async with self._conn_lock:
-            return await self._conn.delete(key)
+    def delete(self, key: str) -> bool:
+        with self._conn_lock:
+            return self._conn.delete(key)

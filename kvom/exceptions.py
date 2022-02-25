@@ -1,13 +1,29 @@
 # -*- coding: utf-8 -*-
 
 
-class KVOMError(Exception):
+class MoconException(Exception):
     pass
 
 
-class PrimaryKeyNotFoundError(KVOMError):
+class InvalidModelException(MoconException):
     pass
 
 
-class PrimaryKeyDuplicateError(KVOMError):
+class InvalidKeyException(MoconException):
+    pass
+
+
+class PrimaryKeyNotFound(MoconException):
+    pass
+
+
+class PrimaryKeyDuplicated(MoconException):
+    pass
+
+
+class NoSourceError(MoconException):
+    pass
+
+
+class NotSupportedSource(MoconException):
     pass
