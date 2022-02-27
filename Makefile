@@ -22,7 +22,7 @@ mypy:
 
 .PHONY: test
 test:
-	pytest --cov=pydantic
+	pytest --cov=kvom
 
 .PHONY: testcov
 testcov: test
@@ -56,7 +56,7 @@ clean:
 	rm -rf site
 	rm -rf docs/_build
 	rm -rf docs/.changelog.md docs/.version.md docs/.tmp_schema_mappings.html
-	rm -rf fastapi/test.db
+	rm -rf kvom/test.db
 	rm -rf coverage.xml
 
 .PHONY: docs
