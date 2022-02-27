@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-from typing import Any, Union, Dict
+from typing import Any, Dict, Union
+
+from redis.connection import ConnectionPool as RedisConnPool
 
 from kvom.utils import DatabaseURL
-from redis.connection import ConnectionPool as RedisConnPool
 
 
 class DatabaseBackend:

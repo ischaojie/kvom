@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from typing import AbstractSet, Any, Dict, Mapping, Optional, Union
 
-from pydantic.fields import FieldInfo as PydanticFieldInfo, NoArgAnyCallable, Undefined
+from pydantic.fields import FieldInfo as PydanticFieldInfo
+from pydantic.fields import NoArgAnyCallable, Undefined
 
 
 class FieldInfo(PydanticFieldInfo):

@@ -74,9 +74,7 @@ class BaseModelMeta(ModelMetaclass):
             cls._meta.model_key_prefix = None
         # no defined Meta, no inherited, use default
         else:
-            cls._meta = type(
-                f"{cls.__name__}Meta", (BaseMeta,), dict(BaseMeta.__dict__)
-            )
+            cls._meta = type(f"{cls.__name__}Meta", (BaseMeta,), dict(BaseMeta.__dict__))
             cls.Meta = cls._meta
 
         # set Meta default value if there is no defined

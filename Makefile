@@ -7,18 +7,16 @@ install:
 
 .PHONY: format
 format:
-	isort mocon tests --check-only --df
-	black mocon tests --check --diff
+	isort kvom tests
+	black kvom tests
 
 .PHONY: lint
-lint:
-	flake8 mocon tests
-	isort mocon tests --check-only --df
-	black mocon tests --check --diff
+lint: format
+	flake8 kvom tests
 
 .PHONY: mypy
 mypy:
-	mypy mocon
+	mypy kvom
 
 .PHONY: test
 test:

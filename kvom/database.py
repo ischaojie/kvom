@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import threading
-
-import asyncio
 from contextvars import ContextVar
-from typing import Union, Any, Dict
+from typing import Any, Dict, Union
 
-from kvom.backend import DatabaseBackend, RedisBackend, MemcachedBackend
+from kvom.backend import DatabaseBackend, MemcachedBackend, RedisBackend
 from kvom.utils import DatabaseURL
 
 

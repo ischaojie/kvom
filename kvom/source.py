@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import Any, Union, Optional
-from urllib.parse import SplitResult, urlsplit, unquote, parse_qsl
+from typing import Any, Optional, Union
+from urllib.parse import SplitResult, parse_qsl, unquote, urlsplit
 
 from redis import Redis
 

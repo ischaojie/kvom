@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import pytest
+
+from kvom.exceptions import NoSourceError
 from kvom.model import BaseModel
 from kvom.source import Source
-from kvom.exceptions import NoSourceError
 
 
 class Movie(BaseModel):

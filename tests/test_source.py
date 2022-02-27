@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from kvom.source import SourceURL, RedisBackend, Source
+from kvom.source import RedisBackend, Source, SourceURL
 
 
 @pytest.mark.parametrize(
