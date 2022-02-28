@@ -2,13 +2,13 @@
 
 .PHONY: install
 install:
-	poetry init
-	@echo 'installed development requirements'
+	poetry install
+	@echo 'installed poetry environment'
 
 .PHONY: format
 format:
-	isort kvom tests
-	black kvom tests
+	isort --check --diff --project=kvom kvom tests
+	black --check --diff kvom tests
 
 .PHONY: lint
 lint: format
@@ -20,15 +20,10 @@ mypy:
 
 .PHONY: test
 test:
-	pytest --cov=kvom
+	pytest --cov=kvom tests/
 
 .PHONY: testcov
 testcov: test
-	@echo "building coverage html"
-	@coverage html
-
-.PHONY: testcov-compile
-testcov-compile: build-trace test
 	@echo "building coverage html"
 	@coverage html
 

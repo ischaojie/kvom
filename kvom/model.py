@@ -15,7 +15,7 @@ T = TypeVar("T", bound="BaseModel")
 
 class BaseMeta:
     # data source
-    source: Source = None
+    source: Optional[Source] = None
 
     # the model encoding format when saving to the store
     encoding: str = "utf-8"
@@ -76,7 +76,9 @@ class BaseModelMeta(ModelMetaclass):
             cls._meta.model_key_prefix = None
         # no defined Meta, no inherited, use default
         else:
-            cls._meta = type(f"{cls.__name__}Meta", (BaseMeta,), dict(BaseMeta.__dict__))
+            cls._meta = type(
+                f"{cls.__name__}Meta", (BaseMeta,), dict(BaseMeta.__dict__)
+            )
             cls.Meta = cls._meta
 
         # set Meta default value if there is no defined
@@ -128,7 +130,9 @@ class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
         return cls.parse_raw(data, encoding=cls._meta.encoding)
 
     def save(self) -> bool:
-        return self._meta.source.set(self.key, self.json())
+        cls = self.__class__
+        return cls._meta.source.set(self.key, self.json())
 
     def delete(self) -> bool:
-        return self._meta.source.delete(self.key)
+        cls = self.__class__
+        return cls._meta.source.delete(self.key)

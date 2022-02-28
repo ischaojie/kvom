@@ -88,7 +88,8 @@ class SourceURL:
             self._url = url
         else:
             raise TypeError(
-                f"Invalid type for DatabaseURL. Expected str or DatabaseURL, got {type(url)}"
+                f"Invalid type for DatabaseURL. "
+                f"Expected str or DatabaseURL, got {type(url)}"
             )
 
     @property
