@@ -8,6 +8,8 @@ from pydantic.main import ModelMetaclass
 from kvom.exceptions import NoSourceError
 from kvom.source import Source
 
+__all__ = ["BaseModel"]
+
 T = TypeVar("T", bound="BaseModel")
 
 
