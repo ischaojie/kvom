@@ -2,6 +2,7 @@
 from typing import Any, Optional, Union
 from urllib.parse import SplitResult, parse_qsl, unquote, urlsplit
 
+from pymongo import MongoClient
 from redis import Redis
 
 from kvom.exceptions import NotSupportedSource
@@ -45,7 +46,33 @@ class RedisBackend(Backend):
 
 
 class MongoBackend(Backend):
-    pass
+    def __init__(
+        self, url: Union[str, "SourceURL"], mongo_document: str = "kvom", **options: Any
+    ) -> None:
+        self._url = SourceURL(url)
+        self._options = options
+        self._document_name = mongo_document
+
+    def connection(self) -> "MongoClient":
+        client = MongoClient(
+            host=self._url.hostname,
+            port=self._url.port,
+            **self._options,
+        )
+        return client[self._url.database]
+
+    @property
+    def _document(self) -> "MongoClient":
+        return self.connection()[self._document_name]
+
+    def get(self, key: str) -> Union[str, None]:
+        return self._document.find_one({"key": key})["value"]
+
+    def set(self, key: str, value: str) -> bool:
+        return self._document.insert_one({"key": key, "value": value})
+
+    def delete(self, key: str) -> bool:
+        return self._document.delete_one({"key": key})
 
 
 class BeansdbBackend(Backend):
