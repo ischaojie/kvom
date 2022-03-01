@@ -7,11 +7,16 @@ install:
 
 .PHONY: format
 format:
+	isort --project=kvom kvom tests
+	black --check kvom tests
+
+.PHONY: format-diff
+format-diff:
 	isort --check --diff --project=kvom kvom tests
 	black --check --diff kvom tests
 
 .PHONY: lint
-lint: format
+lint: format-diff
 	flake8 kvom tests
 
 .PHONY: mypy
@@ -32,25 +37,7 @@ all: lint mypy testcov
 
 .PHONY: clean
 clean:
-	rm -rf `find . -name __pycache__`
-	rm -f `find . -type f -name '*.py[co]'`
-	rm -f `find . -type f -name '*~'`
-	rm -f `find . -type f -name '.*~'`
-	rm -rf .cache
-	rm -rf .pytest_cache
-	rm -rf .mypy_cache
-	rm -rf htmlcov
-	rm -rf *.egg-info
-	rm -f .coverage
-	rm -f .coverage.*
-	rm -rf build
-	rm -rf dist
-	python setup.py clean
-	rm -rf site
-	rm -rf docs/_build
-	rm -rf docs/.changelog.md docs/.version.md docs/.tmp_schema_mappings.html
-	rm -rf kvom/test.db
-	rm -rf coverage.xml
+	git clean -f -X -d
 
 .PHONY: docs
 docs:

@@ -48,6 +48,10 @@ class MongoBackend(Backend):
     pass
 
 
+class BeansdbBackend(Backend):
+    pass
+
+
 class Source:
     SUPPORTED_SOURCE = {
         "redis": RedisBackend,
