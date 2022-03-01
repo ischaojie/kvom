@@ -47,11 +47,11 @@ class RedisBackend(Backend):
 
 class MongoBackend(Backend):
     def __init__(
-        self, url: Union[str, "SourceURL"], document: str = "kvom", **options: Any
+        self, url: Union[str, "SourceURL"], mongo_document: str = "kvom", **options: Any
     ) -> None:
         self._url = SourceURL(url)
         self._options = options
-        self._document_name = document
+        self._document_name = mongo_document
 
     def connection(self) -> "MongoClient":
         client = MongoClient(
