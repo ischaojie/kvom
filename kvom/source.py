@@ -47,11 +47,11 @@ class RedisBackend(Backend):
 
 class MongoBackend(Backend):
     def __init__(
-        self, url: Union[str, "SourceURL"], mongo_document: str = "kvom", **options: Any
+        self, url: Union[str, "SourceURL"], document: str = "kvom", **options: Any
     ) -> None:
         self._url = SourceURL(url)
         self._options = options
-        self._document_name = mongo_document
+        self._document_name = document
 
     def connection(self) -> "MongoClient":
         client = MongoClient(
@@ -73,10 +73,6 @@ class MongoBackend(Backend):
 
     def delete(self, key: str) -> bool:
         return self._document.delete_one({"key": key})
-
-
-class BeansdbBackend(Backend):
-    pass
 
 
 class Source:
