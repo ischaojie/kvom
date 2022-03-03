@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from kvom.source import RedisBackend, Source, SourceURL
+from kvom.source import MongoBackend, RedisBackend, Source, SourceURL
 
 
 @pytest.mark.parametrize(
@@ -24,19 +24,19 @@ def test_redis_backend():
     assert backend.delete("ping")
 
 
-# def test_mongo_backend():
-#     backend = MongoBackend("mongodb://localhost:27017/test")
-#     assert backend.set("ping", "pong")
-#     assert backend.get("ping") == "pong"
-#     assert backend.delete("ping")
-#     assert backend._document_name == "kvom"
+def test_mongo_backend():
+    backend = MongoBackend("mongodb://localhost:27017/test")
+    assert backend.set("ping", "pong")
+    assert backend.get("ping") == "pong"
+    assert backend.delete("ping")
+    assert backend._document_name == "kvom"
 
 
-# def test_mongo_backend_custom_document():
-#     backend = MongoBackend("mongodb://localhost:27017/test", document="test-kvom")
-#     assert backend.set("ping", "{'a': 'b'}")
-#     assert backend.get("ping") == "{'a': 'b'}"
-#     assert backend.delete("ping")
+def test_mongo_backend_custom_document():
+    backend = MongoBackend("mongodb://localhost:27017/test", document="test-kvom")
+    assert backend.set("ping", "{'a': 'b'}")
+    assert backend.get("ping") == "{'a': 'b'}"
+    assert backend.delete("ping")
 
 
 @pytest.mark.parametrize(
