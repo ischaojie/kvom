@@ -7,9 +7,7 @@ from pydantic.fields import NoArgAnyCallable, Undefined
 
 class FieldInfo(PydanticFieldInfo):
     def __init__(self, default: Any = Undefined, **kwargs: Any) -> None:
-        primary_key = kwargs.pop("primary_key", False)
         super().__init__(default=default, **kwargs)
-        self.primary_key = primary_key
 
 
 def Field(
@@ -37,7 +35,6 @@ def Field(
     max_length: int = None,
     allow_mutation: bool = True,
     regex: str = None,
-    primary_key: bool = False,
     schema_extra: Optional[Dict[str, Any]] = None,
 ) -> Any:
     current_schema_extra = schema_extra or {}
@@ -61,7 +58,6 @@ def Field(
         max_length=max_length,
         allow_mutation=allow_mutation,
         regex=regex,
-        primary_key=primary_key,
         **current_schema_extra,
     )
     field_info._validate()
