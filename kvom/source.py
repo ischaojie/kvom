@@ -75,10 +75,6 @@ class MongoBackend(Backend):
         return self._document.delete_one({"key": key})
 
 
-class BeansdbBackend(Backend):
-    pass
-
-
 class Source:
     SUPPORTED_SOURCE = {
         "redis": RedisBackend,

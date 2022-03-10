@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+import secrets
 import uuid
 from typing import Any, ClassVar, Optional, TypeVar
 
-from pydantic import BaseModel as PydanticBaseModel
+from pydantic import BaseModel as PydanticBaseModel, validator
 from pydantic.main import ModelMetaclass
 
-from kvom.exceptions import NoSourceError
+from kvom.exceptions import NoSourceError, PrimaryKeyDuplicated, PrimaryKeyNotFound
 from kvom.source import Source
+from kvom.field import Field
 
 __all__ = ["BaseModel"]
 
@@ -20,13 +22,9 @@ class BaseMeta:
     # the model encoding format when saving to the store
     encoding: str = "utf-8"
 
-    # Model prefix for get or save in the store
-    # Default value will be the module name concat model name
-    global_key_prefix: Optional[str] = None
-    model_key_prefix: Optional[str] = None
+    prefix: Optional[str] = None
 
-    # the primary key of the model
-    db_key: Optional[str] = None
+    primary_key: Optional[str] = None
 
     # is support embedded model
     embedded: bool = False
@@ -36,14 +34,8 @@ def _set_meta_default(cls, meta, base_meta):
     if not getattr(meta, "encoding", None):
         meta.encoding = getattr(base_meta, "encoding", "utf-8")
 
-    if not getattr(meta, "global_key_prefix", None):
-        meta.global_key_prefix = getattr(base_meta, "global_key_prefix", "")
-
-    if not getattr(meta, "model_key_prefix", None):
+    if not getattr(meta, "prefix", None):
         meta.model_key_prefix = f"{cls.__module__}:{cls.__name__}".lower()
-
-    if not getattr(meta, "db_key", None):
-        meta.db_key = getattr(base_meta, "db_key", uuid.uuid4().hex)
 
     if not getattr(meta, "embedded", None):
         meta.embedded = getattr(base_meta, "embedded", False)
@@ -102,6 +94,7 @@ class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
     user.save()
 
     """
+    pk: Optional[str] = Field(default=None, primary_key=True)
 
     Meta = BaseMeta
     identity: ClassVar[str]
@@ -109,18 +102,35 @@ class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
     def __init__(__pydantic_self__, **data: Any) -> None:
         super().__init__(**data)
         __pydantic_self__.validate_source()
+        __pydantic_self__.validate_pk()
 
     @property
     def key(self):
-        db_key = getattr(self._meta, "db_key")
-        global_prefix = getattr(self._meta, "global_key_prefix", "")
-        model_prefix = getattr(self._meta, "model_key_prefix", "")
-        return f"{global_prefix}:{model_prefix}:{db_key}".strip(":")
+        prefix = getattr(self._meta, "prefix", "")
+        primary_key = getattr(self._meta, "primary_key")
+        return f"{prefix}:{primary_key}".strip(":")
 
     @classmethod
     def validate_source(cls):
         if cls._meta.source is None or not isinstance(cls._meta.source, Source):
             raise NoSourceError("Model must have a Source client")
+
+    @classmethod
+    def validate_pk(cls):
+        primary_keys = 0
+        for name, field in cls.__fields__.items():
+            if getattr(field.field_info, "primary_key", None):
+                primary_keys += 1
+        if primary_keys == 0:
+            raise PrimaryKeyNotFound("You must define a primary key for the model")
+        elif primary_keys > 1:
+            raise PrimaryKeyDuplicated("You must define only one primary key for a model")
+
+    @validator("pk", always=True, allow_reuse=True)
+    def pk_or_default(cls, v):
+        if not v:
+            v = secrets.token_hex(4)
+        return v
 
     @classmethod
     def get(cls, key: str) -> Optional["BaseModel"]:
