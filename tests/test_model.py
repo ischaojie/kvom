@@ -53,7 +53,7 @@ def test_model_meta_custom():
     assert User.Meta.primary_key == "name"
 
     user = User(name="test", age=10)
-    assert user.key == "user:name"
+    assert user.key == "custom_prefix:name"
 
 
 def test_model_meta_inherited():

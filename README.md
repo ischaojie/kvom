@@ -26,7 +26,7 @@ from pydantic import EmailStr
 class User(BaseModel):
     class Meta:
         source = Source("redis://localhost:6379/0")
-        db_key = "user"
+        prefix = "custom_prefix"
 
     name: str
     age: int

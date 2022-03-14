@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kvom"
-version = "0.1.0"
+version = "0.2.0"
 description = "key-value store object mapping"
 authors = ["ischaojie <zhuzhezhe95@gmail.com>"]
 
