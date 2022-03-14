@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import secrets
-import uuid
 from typing import Any, ClassVar, Optional, TypeVar
 
-from pydantic import BaseModel as PydanticBaseModel, validator
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import validator
 from pydantic.main import ModelMetaclass
 
 from kvom.exceptions import NoSourceError, PrimaryKeyDuplicated, PrimaryKeyNotFound
+from kvom.field import Field, FieldInfo
 from kvom.source import Source
 from kvom.field import Field
 
@@ -35,7 +36,7 @@ def _set_meta_default(cls, meta, base_meta):
         meta.encoding = getattr(base_meta, "encoding", "utf-8")
 
     if not getattr(meta, "prefix", None):
-        meta.model_key_prefix = f"{cls.__module__}:{cls.__name__}".lower()
+        meta.prefix = f"{cls.__module__}:{cls.__name__}".lower()
 
     if not getattr(meta, "embedded", None):
         meta.embedded = getattr(base_meta, "embedded", False)
@@ -64,14 +65,16 @@ class BaseModelMeta(ModelMetaclass):
                 f"{cls.__name__}Meta", (base_meta,), dict(base_meta.__dict__)
             )
             cls.Meta = cls._meta
-            # remove inherited meta attr
-            cls._meta.model_key_prefix = None
         # no defined Meta, no inherited, use default
         else:
             cls._meta = type(
                 f"{cls.__name__}Meta", (BaseMeta,), dict(BaseMeta.__dict__)
             )
             cls.Meta = cls._meta
+
+        for f_name, field in cls.__fields__.items():
+            if isinstance(field.field_info, FieldInfo):
+                cls._meta.primary_key = f_name
 
         # set Meta default value if there is no defined
         _set_meta_default(cls, cls._meta, base_meta)
@@ -94,6 +97,8 @@ class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
     user.save()
 
     """
+    pk: Optional[str] = Field(default=None, primary_key=True)
+
     pk: Optional[str] = Field(default=None, primary_key=True)
 
     Meta = BaseMeta
@@ -124,7 +129,9 @@ class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
         if primary_keys == 0:
             raise PrimaryKeyNotFound("You must define a primary key for the model")
         elif primary_keys > 1:
-            raise PrimaryKeyDuplicated("You must define only one primary key for a model")
+            raise PrimaryKeyDuplicated(
+                "You must define only one primary key for a model"
+            )
 
     @validator("pk", always=True, allow_reuse=True)
     def pk_or_default(cls, v):

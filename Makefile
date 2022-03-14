@@ -15,13 +15,13 @@ format-diff:
 	isort --check --diff --project=kvom kvom tests
 	black --check --diff kvom tests
 
-.PHONY: lint
-lint: format-diff
-	flake8 kvom tests
-
 .PHONY: mypy
 mypy:
 	mypy kvom
+
+.PHONY: lint
+lint: format-diff
+	flake8 kvom tests
 
 .PHONY: test
 test:
