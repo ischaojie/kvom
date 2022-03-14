@@ -9,7 +9,6 @@ from pydantic.main import ModelMetaclass
 from kvom.exceptions import NoSourceError, PrimaryKeyDuplicated, PrimaryKeyNotFound
 from kvom.field import Field, FieldInfo
 from kvom.source import Source
-from kvom.field import Field
 
 __all__ = ["BaseModel"]
 
@@ -97,7 +96,6 @@ class BaseModel(PydanticBaseModel, metaclass=BaseModelMeta):
     user.save()
 
     """
-    pk: Optional[str] = Field(default=None, primary_key=True)
 
     pk: Optional[str] = Field(default=None, primary_key=True)
 
