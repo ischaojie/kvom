@@ -1,27 +1,57 @@
-[tool.poetry]
-name = "kvom"
-version = "0.2.0"
-description = "key-value store object mapping"
-authors = ["ischaojie <zhuzhezhe95@gmail.com>"]
-
-[tool.poetry.dependencies]
-python = "^3.7"
-pydantic = "^1.9.0"
-redis = "^4.1.3"
-pymongo = "^4.0.1"
-
-[tool.poetry.dev-dependencies]
-pytest = "^7.0.1"
-black = "^22.1.0"
-mypy = "^0.931"
-pytest-cov = "^3.0.0"
-isort = "^5.10.1"
-flake8 = "^4.0.1"
-pytest-xdist = "^2.5.0"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kvom"
+description = "key-value store object mapping"
+dynamic = ["version"]
+authors = [
+    { name = "chaojie", email = "hi@chaojie.fun" },
+]
+dependencies = [
+    "pydantic",
+    "pymongo",
+    "redis",
+]
+
+[project.urls]
+Source = "https://github.com/ischaojie/kvom"
+
+[tool.hatch.version]
+path = "kvom/__init__.py"
+
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "mypy",
+    "isort",
+    "flake8",
+    "pytest-xdist",
+    "autoflake"
+]
+
+[tool.hatch.envs.default.scripts]
+clean = ["git clean"]
+check = [
+    "flake8 kvom tests --max-line-length=90",
+    "black --check --diff kvom tests",
+    "isort --check-only --diff kvom tests",
+    # "mypy kvom"
+]
+lint = [
+    "autoflake -r kvom tests",
+    "isort kvom tests",
+    "black kvom tests",
+]
+test = [
+    "pytest tests/ -s --cov=kvom --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml --cov-fail-under=70",
+]
+report = ["coverage report -m"]
+all = ["check", "test"]
 
 [tool.isort]
 profile = "black"
