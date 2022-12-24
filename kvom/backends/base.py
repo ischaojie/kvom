@@ -8,11 +8,11 @@ class ClientBackend:
     def disconn(self) -> None:
         raise NotImplementedError()
 
-    def pool(self) -> PoolBackend:
+    def conn_pool(self) -> ConnPoolBackend:
         raise NotImplementedError()
 
 
-class PoolBackend:
+class ConnPoolBackend:
     def acquire(self) -> None:
         raise NotImplementedError()
 
